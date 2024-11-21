@@ -1,0 +1,10 @@
+- name: Collect IP addresses of all hosts in group
+  ansible.builtin.set_fact:
+    all_ips: "{{ groups['all'] | map('extract', hostvars, 'ansible_host') |
+      list }}"
+
+- name: Remove IP/hostname from known_hosts
+  changed_when: false
+  ansible.builtin.command:
+    cmd: "ssh-keygen -R {{ item }}"
+  loop: "{{ all_ips }}"

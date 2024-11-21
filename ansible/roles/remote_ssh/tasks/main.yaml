@@ -1,0 +1,38 @@
+- name: Update Package
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Copy ssh pubkey
+  ansible.posix.authorized_key:
+    user: serveradmin
+    state: present
+    key: "{{ lookup('file', './ssh/ansible.pub') }}"
+
+- name: Update SSH configuration to be more secure
+  ansible.builtin.lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+    validate: 'sshd -T -f %s'
+    mode: "644"
+  with_items:
+    - regexp: "^PasswordAuthentication"
+      line: "PasswordAuthentication no"
+    - regexp: "^PermitRootLogin"
+      line: "PermitRootLogin no"
+    - regexp: "^Port"
+      line: "Port 22"
+    - regexp: "^PermitEmptyPasswords"
+      line: "PermitEmptyPasswords no"
+    - regexp: "^ChallengeResponseAuthentication"
+      line: "ChallengeResponseAuthentication no"
+    - regexp: "^GSSAPIAuthentication"
+      line: "GSSAPIAuthentication no"
+    - regexp: "^X11Forwarding"
+      line: "X11Forwarding no"
+
+- name: Restart SSH daemon
+  ansible.builtin.service:
+    name: sshd
+    state: restarted

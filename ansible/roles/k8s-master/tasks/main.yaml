@@ -1,0 +1,119 @@
+- name: Set the hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update /etc/hosts file for the new hostname
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 {{ inventory_hostname }}"
+    state: present
+    regexp: "^127\\.0\\.0\\.1\\s"
+
+- name: Update /etc/hostname file
+  ansible.builtin.copy:
+    content: "{{ inventory_hostname }}\n"
+    dest: /etc/hostname
+    mode: '644'
+
+- name: Delete file if exists
+  ansible.builtin.file:
+    path: /etc/kubernetes/kubeadm-config.yaml
+    state: absent
+
+- name: Create an empty file for Kubeadm configuring
+  ansible.builtin.copy:
+    content: |
+      kind: ClusterConfiguration
+      apiVersion: kubeadm.k8s.io/v1beta3
+      networking:
+        podSubnet: "10.244.0.0/16"
+      ---
+      kind: KubeletConfiguration
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      runtimeRequestTimeout: "15m"
+      cgroupDriver: "systemd"
+      systemReserved:
+        cpu: 100m
+        memory: 350M
+      kubeReserved:
+        cpu: 100m
+        memory: 50M
+      enforceNodeAllocatable:
+      - pods
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    force: false
+    mode: '755'
+
+- name: Check if the images pull log exists
+  ansible.builtin.stat:
+    path: /var/log/kubeadm_images_pulled.log
+  register: images_pull_log
+
+- name: Pull Kubernetes images
+  changed_when: false
+  ansible.builtin.command:
+    cmd: kubeadm config images pull
+  register: pull_result
+  when: not images_pull_log.stat.exists
+
+- name: Create log file to indicate cluster initialization
+  ansible.builtin.copy:
+    content: "{{ pull_result }}"
+    dest: /var/log/kubeadm_images_pulled.log
+    mode: '0644'
+  when: pull_result is succeeded
+
+- name: Create log file to indicate images have been pulled
+  ansible.builtin.file:
+    path: /var/log/kubeadm_images_pulled.log
+    state: touch
+    mode: '0644'
+  when: pull_result is succeeded
+
+- name: Check if the cluster init log exists
+  ansible.builtin.stat:
+    path: /var/log/kubeadm_initialized.log
+  register: cluster_init_log
+
+- name: Initialize the Kubernetes cluster
+  changed_when: false
+  ansible.builtin.command:
+    cmd: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml
+  register: init_result
+  when: not cluster_init_log.stat.exists
+
+- name: Create log file to indicate cluster initialization
+  ansible.builtin.copy:
+    content: "{{ init_result }}"
+    dest: /var/log/kubeadm_initialized.log
+    mode: '0644'
+  when: init_result is succeeded
+
+- name: Create .kube directory
+  ansible.builtin.file:
+    path: $HOME/.kube
+    state: directory
+    mode: '755'
+
+- name: Copy admin.conf to user's kube config
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: $HOME/.kube/config
+    remote_src: true
+    owner: serveradmin
+    mode: '755'
+
+- name: Cat kube config
+  changed_when: false
+  ansible.builtin.command:
+    cmd: cat $HOME/.kube/config
+  register: cat_output
+
+- name: Display kube config
+  ansible.builtin.debug:
+    msg: "{{ cat_output.stdout }}"
+
+- name: Install Pod network
+  changed_when: false
+  ansible.builtin.command:
+    cmd: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml

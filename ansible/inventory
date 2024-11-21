@@ -1,0 +1,7 @@
+[plane]
+master-node ansible_host=172.16.0.20 ansible_connection=ssh ansible_ssh_user=serveradmin 
+
+[worker]
+worker-node-1 ansible_host=172.16.0.21 ansible_connection=ssh ansible_ssh_user=serveradmin 
+worker-node-2 ansible_host=172.16.0.22 ansible_connection=ssh ansible_ssh_user=serveradmin 
+worker-node-3 ansible_host=172.16.0.23 ansible_connection=ssh ansible_ssh_user=serveradmin 
