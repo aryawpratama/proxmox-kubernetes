@@ -1,6 +1,0 @@
-srv_pass = "serveradmin"
-pm_pass = "ekuidadmin123joss"
-pm_user = "root@pam"
-pm_api_token_id = "root@pam!terraform"
-pm_api_token_secret = "3b327476-a470-4f28-b481-ce96419c27ac"
-pm_endpoint = "https://172.16.0.3:8006/api2/json"
