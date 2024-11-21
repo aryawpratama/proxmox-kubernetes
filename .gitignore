@@ -1,3 +1,4 @@
 ansible/vaultpass.txt
 ansible/becomepass.txt
 ansible/ssh/ansible
+secret.auto.tfvars
