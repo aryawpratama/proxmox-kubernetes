@@ -1,0 +1,6 @@
+srv_pass = ""
+pm_pass = ""
+pm_user = ""
+pm_api_token_id = ""
+pm_api_token_secret = ""
+pm_endpoint = ""

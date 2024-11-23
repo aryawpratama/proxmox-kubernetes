@@ -1,0 +1,58 @@
+- name: Set the hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update /etc/hosts file for the new hostname
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 {{ inventory_hostname }}"
+    state: present
+    regexp: "^127\\.0\\.0\\.1\\s"
+
+- name: Update /etc/hostname file
+  ansible.builtin.copy:
+    content: "{{ inventory_hostname }}\n"
+    dest: /etc/hostname
+    mode: '644'
+
+- name: Get current hostname
+  changed_when: false
+  ansible.builtin.command: hostname
+  register: current_hostname
+
+- name: Check if hostname needs to be changed
+  ansible.builtin.debug:
+    msg: "Hostname is already set to {{ current_hostname.stdout }}"
+
+- name: Reset Kubernetes on Worker Node
+  changed_when: false
+  ansible.builtin.command:
+    cmd: kubeadm reset -f
+
+- name: Debug Join Command
+  ansible.builtin.debug:
+    msg: "{{ hostvars[groups['plane'][0]].join_command }}"
+
+- name: TCP port 6443 on master is reachable from worker
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[groups['plane'][0]].ansible_host }}"
+    port: 6443
+
+- name: Check if the join command log exists
+  ansible.builtin.stat:
+    path: /var/log/join_command.log
+  register: join_command_log
+
+- name: Join cluster
+  ansible.builtin.command:
+    cmd: "{{ hostvars[groups['plane'][0]].join_command }}"
+  register: join_result
+  changed_when: false
+  when: not join_command_log.stat.exists
+
+- name: Create log file to indicate Join cluster success
+  ansible.builtin.file:
+    path: /var/log/join_command.log
+    state: touch
+    mode: '0644'
+  when: join_result is succeeded
