@@ -12,7 +12,7 @@ variable k8splane {
   default = {
     plane = {
       vmid = 200
-      name = "k8s-eku-P01"
+      name = "k8s-plane-01"
       memory = 4096
       cores = 2
       sockets = 2
@@ -36,7 +36,7 @@ variable k8sworker {
   default = {
     worker1 = {
       vmid = 201
-      name = "k8s-eku-W01"
+      name = "k8s-worker-01"
       memory = 4096
       cores = 1
       sockets = 2
@@ -46,7 +46,7 @@ variable k8sworker {
     }
     worker2 = {
       vmid = 202
-      name = "k8s-eku-W02"
+      name = "k8s-worker-02"
       memory = 4096
       cores = 1
       sockets = 2
@@ -56,7 +56,7 @@ variable k8sworker {
     }
     worker3 = {
       vmid = 203
-      name = "k8s-eku-W03"
+      name = "k8s-worker-03"
       memory = 4096
       cores = 1
       sockets = 2
